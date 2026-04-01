@@ -1,27 +1,35 @@
 import streamlit as st
+import numpy as np
+from tensorflow.keras.models import load_model
 
-st.title("🤖 My Custom AI Chatbot")
+# Load model yang sudah dibuat di train.py
+model = load_model('chatbot_model.h5')
 
-# Inisialisasi history chat agar tidak hilang saat refresh
+st.set_page_config(page_title="My AI Chatbot", page_icon="🤖")
+st.title("Custom Neural Network Chatbot")
+
+# Inisialisasi chat history
 if "messages" not in st.session_state:
     st.session_state.messages = []
 
-# Menampilkan chat lama
+# Tampilkan chat history
 for message in st.session_state.messages:
     with st.chat_message(message["role"]):
         st.markdown(message["content"])
 
-# Input user
-if prompt := st.chat_input("Tanya sesuatu..."):
+# Input dari user
+if prompt := st.chat_input("Ketik pesan di sini..."):
+    # 1. Tampilkan pesan user
+    st.session_state.messages.append({"role": "user", "content": prompt})
     with st.chat_message("user"):
         st.markdown(prompt)
-    
-    # Masukkan logika model AI kamu di sini
-    # response = my_ai_model.predict(prompt)
-    response = "Ini adalah jawaban dari model buatanmu sendiri!"
 
+    # 2. Logika Prediksi Model AI kamu
+    # Di sini nanti kamu panggil fungsi untuk memproses input dan memprediksi tag
+    response = "Ini adalah respon hasil prediksi model buatanmu!"
+
+    # 3. Tampilkan pesan bot
     with st.chat_message("assistant"):
         st.markdown(response)
-    
     st.session_state.messages.append({"role": "assistant", "content": response})
-      
+    
