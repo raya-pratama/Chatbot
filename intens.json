@@ -1,0 +1,19 @@
+{
+  "intents": [
+    {
+      "tag": "salam",
+      "patterns": ["Halo", "Hai", "Selamat pagi", "P"],
+      "responses": ["Halo juga! Ada yang bisa dibantu?", "Hai! Saya bot buatanmu."]
+    },
+    {
+      "tag": "kemampuan",
+      "patterns": ["Kamu bisa apa?", "Apa fungsi kamu?", "Tugasmu apa?"],
+      "responses": ["Aku adalah bot portofolio yang dilatih menggunakan Neural Network!"]
+    },
+    {
+      "tag": "perpisahan",
+      "patterns": ["Dah", "Bye", "Sampai jumpa", "Terima kasih"],
+      "responses": ["Sampai jumpa lagi!", "Sama-sama, senang membantu."]
+    }
+  ]
+}
