@@ -2,90 +2,113 @@ import streamlit as st
 import numpy as np
 import pickle
 import nltk
-import os
 from tensorflow.keras.models import load_model
 from nltk.stem import LancasterStemmer
 
-# Download resource NLTK
+# Setup NLTK
 nltk.download('punkt')
 nltk.download('punkt_tab')
 stemmer = LancasterStemmer()
 
-# Konfigurasi Halaman
 st.set_page_config(page_title="AI Chatbot Portofolio", page_icon="🤖")
 
-# --- FUNGSI UTAMA AI ---
+# --- CUSTOM CSS UNTUK TAMPILAN KANAN KIRI ---
+st.markdown("""
+    <style>
+    /* Container untuk chat user (Kanan) */
+    .user-container {
+        display: flex;
+        justify-content: flex-end;
+        margin-bottom: 10px;
+    }
+    .user-bubble {
+        background-color: #007bff;
+        color: white;
+        padding: 10px 15px;
+        border-radius: 20px 20px 0px 20px;
+        max-width: 70%;
+        text-align: right;
+    }
+    /* Container untuk chat bot (Kiri) */
+    .bot-container {
+        display: flex;
+        justify-content: flex-start;
+        margin-bottom: 10px;
+    }
+    .bot-bubble {
+        background-color: #f1f1f1;
+        color: black;
+        padding: 10px 15px;
+        border-radius: 20px 20px 20px 0px;
+        max-width: 70%;
+    }
+    </style>
+    """, unsafe_allow_html=True)
+
+# --- LOAD MODEL & ASSETS ---
 @st.cache_resource
 def load_assets():
-    # Load model dan data pendukung dari hasil training Colab
     model = load_model('chatbot_model.h5')
     data = pickle.load(open("data.pkl", "rb"))
     return model, data['words'], data['classes']
 
 try:
     model, words, classes = load_assets()
-except Exception as e:
-    st.error("File 'chatbot_model.h5' atau 'data.pkl' tidak ditemukan. Pastikan sudah upload hasil training dari Colab!")
+except:
+    st.error("Pastikan file 'chatbot_model.h5' dan 'data.pkl' sudah ada di GitHub!")
     st.stop()
 
-# Dataset jawaban (Sesuaikan tag-nya dengan yang ada di Colab)
+# Jawaban Bot (Sesuai Tag)
 responses_dict = {
-    "salam": "Halo! Senang bertemu denganmu. Ada yang bisa dibantu?",
-    "tanya_kabar": "Aku baik-baik saja! Sebagai AI, aku selalu siap membantumu.",
-    "perpisahan": "Sampai jumpa lagi! Semoga harimu menyenangkan.",
-    "terima_kasih": "Sama-sama! Senang bisa berguna untukmu."
+    "salam": "Halo! Ada yang bisa saya bantu hari ini?",
+    "tanya_kabar": "Saya merasa luar biasa! Bagaimana dengan Anda?",
+    "perpisahan": "Sampai jumpa! Datang lagi ya kalau butuh bantuan.",
+    "terima_kasih": "Sama-sama! Senang bisa membantu."
 }
 
 def clean_up_sentence(sentence):
     sentence_words = nltk.word_tokenize(sentence)
-    sentence_words = [stemmer.stem(word.lower()) for word in sentence_words]
-    return sentence_words
+    return [stemmer.stem(word.lower()) for word in sentence_words]
 
 def bow(sentence, words):
     sentence_words = clean_up_sentence(sentence)
     bag = [0] * len(words)
     for s in sentence_words:
         for i, w in enumerate(words):
-            if w == s:
-                bag[i] = 1
+            if w == s: bag[i] = 1
     return np.array(bag)
 
-# --- TAMPILAN UI ---
-st.title("🤖 My Custom Neural Network Chatbot")
-st.markdown("---")
+# --- LOGIKA CHAT ---
+st.title("🤖 My Custom AI Chatbot")
 
-# Inisialisasi Chat History
 if "messages" not in st.session_state:
     st.session_state.messages = []
 
-# Menampilkan riwayat chat
+# Menampilkan riwayat chat dengan format CSS
 for message in st.session_state.messages:
-    with st.chat_message(message["role"]):
-        st.markdown(message["content"])
+    if message["role"] == "user":
+        st.markdown(f'<div class="user-container"><div class="user-bubble">{message["content"]}</div></div>', unsafe_allow_html=True)
+    else:
+        st.markdown(f'<div class="bot-container"><div class="bot-bubble">{message["content"]}</div></div>', unsafe_allow_html=True)
 
 # Input User
-if prompt := st.chat_input("Ketik sesuatu (misal: Halo)"):
-    # Simpan dan tampilkan pesan user
+if prompt := st.chat_input("Ketik pesan..."):
+    # Tampilkan user ke kanan
     st.session_state.messages.append({"role": "user", "content": prompt})
-    with st.chat_message("user"):
-        st.markdown(prompt)
+    st.markdown(f'<div class="user-container"><div class="user-bubble">{prompt}</div></div>', unsafe_allow_html=True)
 
     # Prediksi AI
     input_data = bow(prompt, words)
     prediction = model.predict(np.array([input_data]), verbose=0)[0]
-    
-    # Ambil index dengan probabilitas tertinggi
     results_index = np.argmax(prediction)
     tag = classes[results_index]
     
-    # Ambang batas keyakinan (Confidence Threshold)
     if prediction[results_index] > 0.5:
-        reply = responses_dict.get(tag, "Aku mengerti maksudmu, tapi aku belum punya jawaban spesifik untuk itu.")
+        reply = responses_dict.get(tag, "Saya mengerti, tapi belum ada jawaban pasti.")
     else:
-        reply = "Maaf, aku belum mempelajari kata itu. Bisa coba bahasa lain?"
+        reply = "Maaf, saya tidak mengerti maksud Anda."
 
-    # Tampilkan jawaban Bot
-    with st.chat_message("assistant"):
-        st.markdown(reply)
+    # Tampilkan bot ke kiri
     st.session_state.messages.append({"role": "assistant", "content": reply})
-        
+    st.markdown(f'<div class="bot-container"><div class="bot-bubble">{reply}</div></div>', unsafe_allow_html=True)
+    
